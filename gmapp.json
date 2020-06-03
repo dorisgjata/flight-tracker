@@ -1,0 +1,17 @@
+{
+  "name":"flight-tracker",
+  "id":"96740112",
+  "template": "DriverFirst",
+  "theme" : {"primary": "#00C0FF"},
+  "version": "0.0.0",
+  "src": "src",
+  "dist": "dist",
+  "main": "app.js",
+  "icon": "Icon.png",
+  "developer": "Doris Gjata",
+  "category": "General",
+  "type": "RemoteHigh",
+  "description": "Generated on 6/2/2020, 6:26:22 PM by ngi-sdk version ",
+  "trusted": true,
+  "dffVersion": "1.6.0-alpha"
+}
