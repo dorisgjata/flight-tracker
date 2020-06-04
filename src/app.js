@@ -63,7 +63,7 @@ ngi.flow('flightFlow', {
           actions: [{
             label: 'Flight',
             action: function() {
-              //recordVoice();
+              recordVoice();
             }
           },
         ],
@@ -99,10 +99,9 @@ ngi.flow('flightFlow', {
     getCountdown();
 
   const recordVoice = () => {
-    let sayFlight = '';
-    
+    let sayFlight = '';    
     let recordingSession = gm.voice.startSpeechRecSession(beginRecording, 'If you want to head to the airport to catch your flight say flight');
-    const beginRecording = () => {
+    function beginRecording(){
       let recordingConfig = {
         intro: 'If you want to head to the airport to catch your flight  say flight after the tone',
         silenceDetection: true,
@@ -113,72 +112,99 @@ ngi.flow('flightFlow', {
       gm.voice.startRecording(finishedRecording, recordingConfig);
     }
   
-    const finishedRecording = (file) => {
+    function finishedRecording(file){
       console.log('File saved to:', file);
       gm.voice.stopSpeechRecSession(recordingSession);
-    }  
+    }    
     //need to convert to txt
     //if sayFlight === 'flight' 
     // navigate to the airport  
 
   }
 
-   const onSuccess = () => {
+   function onSuccess() {
     console.log("Successful!");
   }
 
-  const onFailure = () => {
+  function onFailure() {
       console.log("An error occured.");
   }
 
-  // function getPosition(position){
-  //      if (position !== null || position !== undefined ) {
-  //         console.log(position.coords.latitude, position.coords.longitude);
-  //        let currentLat = position.coords.latitude;
-  //        let currentLong = position.coords.longitude;
-  //        // ngi.state.set('currentLat', position.coords.latitude);
-  //         //ngi.state.set('currentLong', position.coords.longitude);
-  //       }
+  function getPosition(position){
+       if (position !== null || position !== undefined ) {
+          console.log(position.coords.latitude, position.coords.longitude);
+         let currentLat = position.coords.latitude;
+         let currentLong = position.coords.longitude;
+        
+         ngi.state.set('currentLat', position.coords.latitude);
+         ngi.state.set('currentLong', position.coords.longitude);
+        }
        
-  //   };
-    
-  // //watchPosition
- //  gm.info.getCurrentPosition(onSuccess, onFailure, getPosition, true);
-
-
- gm.nav.setDestination(onSuccess, onFailure, flightInfo.coords, true);
-  // function tripTime(){
-  //   let speed = gm.info.watchVehicleData(getSpeed, onSuccess, onFailure, ['average_speed']);  
-  // }
-
-  // function getSpeed(vehicleData){
-  //   let speed = vehicleData.speed;
-  // };
+    };
+    gm.nav.setDestination(onSuccess, onFailure, flightInfo.coords, true);
  
-  // function flightAlert(currTime, timeToDest, flightTime) {
-  //   let message = 'Leave now to catch flight in time!';
-  //   if ((flightTime - currTime - 1 ) <= (timeToDest)) {
-  //     /**I am calculating the time remaining catch the flight and the time to travel to the airport.
-  //        It is optimal to arrive in the arport between 1-2 hours for check-in and boarding
-  //        so I am allocating that time as well.  
-  //     */
-  //     message = 'You will not make your flight!'
-     
-  //   }
-  //   return ngi.toast.load({
-  //       title: message,
-  //       timeout: -1,
-  //       actions: [
-  //         {
-  //           label: 'Dismiss',
-  //           action: function() { 
-  //             this.route('flightTime');
-  //           }
-  //         }
-  //       ]
-  //     });    
-  // } 
+  // could use watchPosition
+  gm.info.getCurrentPosition(onSuccess, onFailure, getPosition, true);
 
+  const tripTime = () => {
+     let speed = gm.info.watchVehicleData(getSpeed, onSuccess, onFailure, ['average_speed']);  
+     let distance = getDistance(ngi.state.get('currentLat'), ngi.state.get('currentLomg'), flightInfo.coords.latitude, flightInfo.coords.longitude);  
+     //let time = distance/speed;
+    // console.log(speed);
+    // console.log(time);
+     //console.log('time', time) 
+     //return time;
+    }
+   
+    const getDistance = (cLat, cLong, deLat, deLong) => {  
+      let R = 3956.0;//radius in miles
+      cLat = radians(cLat);
+      cLong = radians(cLong);
+      deLat = radians(deLat);
+      ceLat = radians(ceLat);
+      let dLat = deLat - cLat;
+      let dLong = deLong - cLong;
+      
+      let a = Math.sin(dLat/2) **2 + Math.cos(cLat) * Math.cos(deLat) * Math.sin(dLong/2) ** 2; 
+      let c = 2 * Math.asin(Math.sqrt(a)); 
+      return c*r;
+    }
+    
+    const  radians = (value) => {
+      return value / (180/Math.PI);
+    }
+
+  function getSpeed(vehicleData){
+    let speed = vehicleData.speed;
+  };
+ 
+  function flightAlert(currTime, timeToDest, flightTime) {
+    let message = 'Leave now to catch flight in time!';
+    if ((flightTime - currTime - 1 ) <= (timeToDest)) {
+      /**I am calculating the time remaining catch the flight and the time to travel to the airport.
+         It is optimal to arrive in the arport between 1-2 hours for check-in and boarding
+         so I am allocating that time as well.  
+      */
+      message = 'You will not make your flight!'
+     
+    }
+    return ngi.toast.load({
+        title: message,
+        timeout: -1,
+        actions: [
+          {
+            label: 'Dismiss',
+            action: function() { 
+              this.route('flightTime');
+            }
+          }
+        ]
+      });    
+  } 
+  let timeToDest = tripTime();
+
+  flightAlert(time,timeToDest, flightInfo );
+  
   ngi.cards("flightFlow.flightMain", {
     title: 'Welcome to Flight Tracker!',
     body: 'This app can track your upcoming flight and help you navigate to the airport. Would you like to track a flight?'
@@ -189,6 +215,20 @@ ngi.flow('flightFlow', {
     onSubmit: function(flightNumber) {
       console.log("Form value", flightNumber);
       ngi.state.set('flightNumber', flightNumber);
+      //if(flightNumber !== flightInfo.flightNo){
+        //console.log("Invalid number");
+
+        // gm.ui.showAlert(onSuccess,onFailure, {
+        //   alertTitle: 'Invalid number ',
+        //   alertDetail: 'Please enter a valid number ',
+        //   primaryButtonText: 'Dissmis',
+        //   primaryAction: function() {
+        //     console.log('dissmis');
+        //   },        
+        // });
+        // this.back();
+      //}
+      gm.nav.setDestination(onSuccess, onFailure, flightInfo.coords, true);
       this.route('flightTime');
     },
     onCancel: function() {
@@ -218,4 +258,3 @@ ngi.flow('flightFlow', {
   
 // Specify your own entry flow, this will connect to Splash, Terms, and About.
 ngi.init('flightFlow');
-
