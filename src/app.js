@@ -12,6 +12,7 @@
 
 let terms = require("./terms.json");
 
+
 let time = new Date();
 let flightTime = new Date(time);
 flightTime.setHours(flightTime.getHours()+3);
@@ -188,7 +189,7 @@ ngi.flow('flightFlow', {
       message = 'You will not make your flight!'
      
     }
-    return ngi.toast.load({
+    ngi.toast.load({
         title: message,
         timeout: -1,
         actions: [
@@ -203,7 +204,7 @@ ngi.flow('flightFlow', {
   } 
   let timeToDest = tripTime();
 
-  flightAlert(time,timeToDest, flightInfo );
+  flightAlert(time,timeToDest, flightTime );
   
   ngi.cards("flightFlow.flightMain", {
     title: 'Welcome to Flight Tracker!',
